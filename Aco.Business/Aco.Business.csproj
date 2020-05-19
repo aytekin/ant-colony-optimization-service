@@ -4,4 +4,13 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Autofac" Version="5.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aco.Core\Aco.Core.csproj" />
+    <ProjectReference Include="..\Aco.Entity\Aco.Entity.csproj" />
+  </ItemGroup>
+
 </Project>
