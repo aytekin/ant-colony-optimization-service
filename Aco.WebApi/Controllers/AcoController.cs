@@ -22,7 +22,7 @@ namespace Aco.WebApi.Controllers
 
 
         [HttpPost("calculate")]
-        public IActionResult Calculate(List<City> cities)
+        public IActionResult Calculate( List<City> cities)
         {
             var result = acoService.Calculate(cities: cities);
 
