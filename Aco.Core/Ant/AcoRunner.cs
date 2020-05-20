@@ -1,4 +1,5 @@
 ﻿using Aco.Entity;
+using Aco.Entity.Dto;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,12 +17,7 @@ namespace Aco.Core.Ant
 
         AcoTsp tsp;
 
-        float alpha = 5;
-        float beta = 1;
-        int iterNum = 1000;
-        int antsNum = 100;
-        float rho = 0.1f;
-        float q = 1;
+
 
         private void calculatePath()
         {
@@ -55,14 +51,14 @@ namespace Aco.Core.Ant
             }
         }
 
-        public AntResult Run(List<City> cities)
+        public AntResult Run(List<City> cities, AcoOptions acoOptions)
         {
             AntResult antResult = new AntResult();
 
             SetCities(cities);
 
             tsp = new AcoTsp();
-            tsp.Calculate(lengthMatr, nodesLocs.Count, antsNum, iterNum, alpha, beta, rho, q);
+            tsp.Calculate(lengthMatr, nodesLocs.Count, acoOptions.AntsNum,acoOptions.IterNum,acoOptions.Alpha,acoOptions.Beta,acoOptions.Rho, acoOptions.Q);
 
             var bestTrl = tsp.GetBestTrail();
 

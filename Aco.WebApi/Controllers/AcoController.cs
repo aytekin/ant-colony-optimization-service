@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Aco.Business.Abstract;
 using Aco.Entity;
+using Aco.Entity.Dto;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,9 +23,9 @@ namespace Aco.WebApi.Controllers
 
 
         [HttpPost("calculate")]
-        public IActionResult Calculate( List<City> cities)
+        public IActionResult Calculate(AcoInput acoInput)
         {
-            var result = acoService.Calculate(cities: cities);
+            var result = acoService.Calculate(cities: acoInput.cities, acoOptions: acoInput.acoOptions);
 
             return Ok(result);
         }
