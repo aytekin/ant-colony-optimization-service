@@ -16,24 +16,34 @@ namespace Aco.Core.Ant
 
         AcoTsp tsp;
 
-        float alpha = 1;
+        float alpha = 5;
         float beta = 1;
         int iterNum = 1000;
-        int antsNum = 200;
-        float rho = 0.5f;
-        float q = 20;
+        int antsNum = 100;
+        float rho = 0.1f;
+        float q = 1;
 
-        void AddNodeToLengthMatrix()
+        private void calculatePath()
         {
-            for (int i = 0; i < lengthMatr.Count; i++)
-                lengthMatr[i].Add(rand.Next(1, 50));
-            lengthMatr.Add(new List<int>());
-            for (int i = 0; i < lengthMatr.Count - 1; i++)
-                lengthMatr[lengthMatr.Count - 1].Add(lengthMatr[i][lengthMatr.Count - 1]);
-            lengthMatr[lengthMatr.Count - 1].Add(0);
 
-            for (int i = 0; i < lengthMatr.Count; i++)
-                lengthMatr[i][i] = 0;
+            List<List<int>> lengthMatr = new List<List<int>>();
+            var index = 0;
+            this.nodesLocs.ForEach(i =>
+            {
+                List<int> list = new List<int>();
+                this.nodesLocs.ForEach(y =>
+                {
+                    var a = (i.X - y.X) * (i.X - y.X);
+                    var b = (i.Y - y.Y) * (i.Y - y.Y);
+                    var res = a - b;
+                    var val = Math.Sqrt(Math.Abs((res)));
+                    list.Add(Convert.ToInt32(val));
+                });
+                lengthMatr.Add(list);
+                index++;
+            });
+
+            this.lengthMatr = lengthMatr;
         }
 
         void SetCities(List<City> cities)
@@ -41,7 +51,7 @@ namespace Aco.Core.Ant
             foreach (var city in cities)
             {
                 nodesLocs.Add(city);
-                AddNodeToLengthMatrix();
+                calculatePath();
             }
         }
 
