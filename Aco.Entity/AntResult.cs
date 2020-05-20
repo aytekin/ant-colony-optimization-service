@@ -6,7 +6,7 @@ namespace Aco.Entity
 {
     public class AntResult
     {
-        public List<string> OptimalRoutes { get; set; }
+        public List<int> OptimalRoutes { get; set; }
         public string OptimalDistance { get; set; }
     }
 }

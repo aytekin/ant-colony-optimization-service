@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Aco.Entity.Dto;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,41 +10,39 @@ namespace Aco.Core.Ant
     {
         private Random random = new Random(0);
         //
-        // influence of pheromone on direction
-        private float alpha;
-        //
-        // influence of adjacent node distance
-        private float beta;
-        //
         // pheromone decrease factor
         private float rho;
         //
         // pheromone increase factor
         private float Q;
 
-        private int citiesNum;
         private int antsNum;
-        private int itersNum;
+        private int iterationsNum;
 
         private int[][] dists;
 
         private int[] bestTrail;
         private float bestLength;
 
-        public void Calculate(List<List<int>> distances, int citiesNum, int antsNum, int iterationsNum, float alpha, float beta, float rho, float Q)
+        private Ant ant;
+
+        public AcoTsp(AcoOptions acoOptions)
         {
-            itersNum = iterationsNum;
+            this.rho = acoOptions.Rho;
+            this.Q = acoOptions.Q;
+            this.antsNum = acoOptions.AntsNum;
+            this.iterationsNum = acoOptions.IterNum;
+            ant = new Ant(acoOptions.Alpha, acoOptions.Beta);
+            
+        }
+
+        public void Calculate(int[][] distances, int citiesNum)
+        {
 
             // Initialize ants to random trails
-            int[][] ants = InitAnts(antsNum, citiesNum);
+            int[][] ants = ant.InitAnts(antsNum, citiesNum);
 
-            dists = new int[distances.Count][];
-            for (int i = 0; i < distances.Count; i++)
-                dists[i] = new int[distances.Count];
-
-            for (int i = 0; i < distances.Count; i++)
-                for (int j = 0; j < distances.Count; j++)
-                    dists[i][j] = distances[i][j];
+            dists = distances;
 
             // Determine the best initial trail
             bestTrail = BestTrail(ants, dists);
@@ -52,9 +51,9 @@ namespace Aco.Core.Ant
 
             float[][] pheromones = InitPheromones(citiesNum);
 
-            for (int i = 0; i < itersNum; i++)
+            for (int i = 0; i < iterationsNum; i++)
             {
-                UpdateAnts(ants, pheromones, dists);
+                ant.UpdateAnts(ants, pheromones, dists);
                 UpdatePheromones(pheromones, ants, dists);
 
                 int[] currBestTrail = BestTrail(ants, dists);
@@ -83,61 +82,7 @@ namespace Aco.Core.Ant
                 return -1f;
         }
 
-        private int[][] InitAnts(int _antsNum, int _citiesNum)
-        {
-            int[][] ants = new int[_antsNum][];
-            for (int k = 0; k < _antsNum; k++)
-            {
-                int start = random.Next(0, _citiesNum);
-                ants[k] = RandomTrail(start, _citiesNum);
-            }
-
-            return ants;
-        }
-
-        private int[] RandomTrail(int start, int _citiesNum)
-        {
-            // Helper for InitAnts
-            int[] trail = new int[_citiesNum];
-
-            // Sequential
-            for (int i = 0; i < _citiesNum; i++)
-            {
-                trail[i] = i;
-            }
-
-            // Fisher-Yates shuffle
-            for (int i = 0; i < _citiesNum; i++)
-            {
-                int r = random.Next(i, _citiesNum);
-
-                int tmp = trail[r];
-                trail[r] = trail[i];
-                trail[i] = tmp;
-            }
-
-            int idx = IndexOfTarget(trail, start);
-
-            // Put start at [0]
-            int temp = trail[0];
-            trail[0] = trail[idx];
-            trail[idx] = temp;
-
-            return trail;
-        }
-
-        private int IndexOfTarget(int[] trail, int target)
-        {
-            // Helper for RandomTrail
-            for (int i = 0; i < trail.Length; i++)
-            {
-                if (trail[i] == target)
-                {
-                    return i;
-                }
-            }
-            throw new Exception("Target not found in IndexOfTarget");
-        }
+      
 
         private float Length(int[] trail, int[][] _dists)
         {
@@ -145,7 +90,7 @@ namespace Aco.Core.Ant
             float result = 0f;
             for (int i = 0; i < trail.Length - 1; i++)
             {
-                result += Distance(trail[i], trail[i + 1], _dists);
+                result += ant.Distance(trail[i], trail[i + 1], _dists);
             }
 
             return result;
@@ -192,103 +137,9 @@ namespace Aco.Core.Ant
             return pheromones;
         }
 
-        private void UpdateAnts(int[][] ants, float[][] pheromones, int[][] _dists)
-        {
-            int _citiesNum = pheromones.Length;
-            for (int k = 0; k < ants.Length; k++)
-            {
-                int start = random.Next(0, _citiesNum);
-                int[] newTrail = BuildTrail(k, start, pheromones, _dists);
-                ants[k] = newTrail;
-            }
-        }
+      
 
-        private int[] BuildTrail(int k, int start, float[][] pheromones, int[][] _dists)
-        {
-            int _citiesNum = pheromones.Length;
-            int[] trail = new int[_citiesNum];
-            bool[] visited = new bool[_citiesNum];
-            trail[0] = start;
-            visited[start] = true;
-            for (int i = 0; i < _citiesNum - 1; i++)
-            {
-                int cityX = trail[i];
-                int next = NextCity(k, cityX, visited, pheromones, _dists);
-                trail[i + 1] = next;
-                visited[next] = true;
-            }
-
-            return trail;
-        }
-
-        private int NextCity(int k, int cityX, bool[] visited, float[][] pheromones, int[][] _dists)
-        {
-            // for ant k (with visited[]), at nodeX, what is next node in trail?
-            float[] probs = MoveProbs(k, cityX, visited, pheromones, _dists);
-
-            float[] cumul = new float[probs.Length + 1];
-            for (int i = 0; i < probs.Length; i++)
-            {
-                cumul[i + 1] = cumul[i] + probs[i];
-                // consider setting cumul[cuml.Length-1] to 1.00
-            }
-
-            float p = (float)random.NextDouble();
-
-            for (int i = 0; i < cumul.Length - 1; i++)
-            {
-                if (p >= cumul[i] && p < cumul[i + 1])
-                {
-                    return i;
-                }
-            }
-            throw new Exception("Failure to return valid city in NextCity");
-        }
-
-        private float[] MoveProbs(int k, int cityX, bool[] visited, float[][] pheromones, int[][] _dists)
-        {
-            // For ant k, located at nodeX, with visited[], return the prob of moving to each city
-            int _citiesNum = pheromones.Length;
-            float[] taueta = new float[_citiesNum];
-            // Inclues cityX and visited cities
-            float sum = 0f;
-            // Sum of all tauetas
-            // i is the adjacent city
-            for (int i = 0; i < taueta.Length; i++)
-            {
-                if (i == cityX)
-                {
-                    taueta[i] = 0f;
-                    // Prob of moving to self is 0
-                }
-                else if (visited[i] == true)
-                {
-                    taueta[i] = 0f;
-                    // Prob of moving to a visited city is 0
-                }
-                else
-                {
-                    taueta[i] = (float)Math.Pow(pheromones[cityX][i], alpha) * (float)Math.Pow((1f / Distance(cityX, i, _dists)), beta);
-                    // Could be huge when pheromone[][] is big
-                    if (taueta[i] < 0.0001f)
-                        taueta[i] = 0.0001f;
-
-                    else if (taueta[i] > (float.MaxValue / (_citiesNum * 100)))
-                        taueta[i] = float.MaxValue / (_citiesNum * 100);
-                }
-                sum += taueta[i];
-            }
-
-            float[] probs = new float[_citiesNum];
-            for (int i = 0; i < probs.Length; i++)
-            {
-                probs[i] = taueta[i] / sum;
-                // Big trouble if sum = 0.0
-            }
-
-            return probs;
-        }
-
+        
         private void UpdatePheromones(float[][] pheromones, int[][] ants, int[][] _dists)
         {
             for (int i = 0; i < pheromones.Length; i++)
@@ -327,7 +178,7 @@ namespace Aco.Core.Ant
         {
             // Are cityX and cityY adjacent to each other in trail[]?
             int lastIndex = trail.Length - 1;
-            int idx = IndexOfTarget(trail, cityX);
+            int idx = ant.IndexOfTarget(trail, cityX);
 
             if ((idx == 0 && trail[1] == cityY) ||
                 (idx == 0 && trail[lastIndex] == cityY))
@@ -358,10 +209,7 @@ namespace Aco.Core.Ant
             }
         }
 
-        private float Distance(int cityX, int cityY, int[][] _dists)
-        {
-            return _dists[cityX][cityY];
-        }
+      
     }
 
 }
